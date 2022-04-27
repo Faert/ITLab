@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ITLab/Shor_result.txt
+/ITLab/Shor_RSA_result.txt

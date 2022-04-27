@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     //Shor test
     size_t n = 4;
 
-    size_t a = 7;
+    size_t a = 2;
     size_t N = 15;
 
     double error = 0;//in %, if in hist then int
@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 
     //Sample dense coding
     Qbit<double> Dense(4); //0, 1 Alice, 2, 3 Bob
-    size_t st = 1;
+    size_t st = 1;//st < 2^2
     Dense[st] = 1;
     
     Dense.H(2);
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
     Dense.CNOT(2, 3);
     Dense.H(2);
 
-    Dense.condition_exp(0, 4, 100);
-    //
+    Dense.condition_exp(0, 4, 100);//Alice = Bob -> res = st + (st << 2)
+
     //system("pause");
 }
