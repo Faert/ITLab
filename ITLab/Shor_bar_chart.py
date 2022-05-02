@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open("Shor_result.txt") as Shor_result: #"Shor_result.txt" d:/ReposVs/nQbit/nQbit/
+with open("Shor_result.txt") as Shor_result:
     all_result = [row.strip() for row in Shor_result]
 
 result = all_result[1].split()
