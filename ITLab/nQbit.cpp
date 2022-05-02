@@ -2,10 +2,9 @@
 #include <vector>
 #include <complex>
 #include <chrono>
-#include <omp.h>//in the properties
+#include <omp.h>
 #include "Qbit.h"
 #include "RM_RSA.h"
-//#include "OLD.h"
 
 using namespace std;
 
@@ -16,12 +15,12 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
 
     //Shor test
-    size_t n = 4;
+    size_t n = 5;
 
     size_t a = 2;
-    size_t N = 15;
+    size_t N = 31;
 
-    double error = 0;//in %, if in hist then int
+    double error = 0;//in %, if in bar chart then int
 
     cout << "P, CP, CPP error = " << error << "%\n";
 
@@ -32,6 +31,8 @@ int main(int argc, char* argv[])
     //Instead of qb.condition_exp(0, 2*n, (1i64 << (n * 2 + 3))) because we count the res
     
     size_t res = 1;
+
+    //qb.cleaning_up_small_errors();
 
     vector<size_t> temp(1i64 << n * 2);
 
@@ -98,7 +99,7 @@ int main(int argc, char* argv[])
     Qbit<double> SHOR_RSA(19);
     SHOR_RSA.Shor(e, pq, 0, 19, 2);
 
-    res = 1;
+    size_t res1 = 1;
 
     vector<size_t> temp1(1i64 << 8);
 
@@ -109,7 +110,7 @@ int main(int argc, char* argv[])
         size_t k = 0;
         while (sum < r)
         {
-            sum += norm(qb[k]);
+            sum += norm(SHOR_RSA[k]);
             k++;
         }
         temp1[(k - 1) % (1i64 << 8)]++;
@@ -119,24 +120,12 @@ int main(int argc, char* argv[])
     {
         if ((temp1[i] > (temp1[0] / 2)) && (temp1[i] > (temp1[i + 1] * 2)) && (temp1[i] > (temp1[i - 1] * 2)))
         {
-            res++;
+            res1++;
         }
     }
 
-    //in file for bar chart
-    ofstream outRSA;
-    out.open("Shor_RSA_result.txt");
-
-    if (outRSA.is_open())
-    {
-        qb.condition_exp_in_file(0, 8, (1i64 << 11), outRSA);
-        outRSA << a << ' ' << N << ' ' << error << ' ' << res << '\n';
-    }
-
-    outRSA.close();
-
-    //if res%2 = 0, else start shor(a, pq) with random a: gcd(a, pq) = 1 
-    size_t p = gcd(MyPow(e, res / 2) + 1, pq);
+    //if res1%2 = 0, else start shor(a, pq) with random a: gcd(a, pq) = 1 
+    size_t p = gcd(MyPow(e, res1 / 2) + 1, pq);
     size_t q = pq / p;
     size_t fn = (p - 1) * (q - 1);
 

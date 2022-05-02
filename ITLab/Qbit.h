@@ -24,8 +24,7 @@ private:
 	}
 
 public:
-	Qbit(size_t s = 4): data(vector<complex<T>>(1i64 << s)), size(s) {} //max s = 31
-	Qbit(const Qbit& other): data(vector<complex<T>>(other.data)), size(other.size) {}
+	Qbit(size_t s = 4): data(vector<complex<T>>(1i64 << s)), size(s) {} //max s = 28 for double
 	Qbit(const vector<complex<T>>& other): data(vector<complex<T>>(other)) 
 	{
 		size_t DataSize = data.size();
@@ -58,126 +57,195 @@ public:
 
 		for (size_t j = 0; j < data.size(); j++)
 		{
-			len += norm((*this)[j]);
+			len += norm(data[j]);
 		}
 
 		len = sqrt(len);
 
 		if (len.real() != 1)
 		{
-			for (size_t j = 0; j < data.size(); j++)
+#pragma omp parallel for
+			for (int j = 0; j < data.size(); j++)
 			{
-				(*this)[j] /= len;
+				data[j] /= len;
 			}
 		}
+	}
+
+	void cleaning_up_small_errors()
+	{
+#pragma omp parallel for
+		for (int j = 0; j < data.size(); j++)
+		{
+			if (norm(data[j]) < 0.00000001)
+			{
+				data[j] = (0, 0);
+			}
+		}
+
+		normalization();
+	}
+
+	void attach(Qbit<T>& other)
+	{
+		vector<complex<T>> temp(1i64 <<(size + other.qsize()));
+		size_t k = 0;
+		for (size_t i = 0; i < (1i64 << other.qsize()); i++)
+		{
+			for (size_t j = 0; j < (1i64 << size); j++, k++)
+			{
+				temp[k] = other[i] * data[j];
+			}
+		}
+		size += other.qsize();
+		data = temp;
 	}
 
 	void H(size_t n)
 	{
-		size_t step = 1 << n;
+		int nbit = (1 << n);
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (!((i % (1 << (n + 1))) >> n))
+			if(!(i & nbit))
 			{
-				complex<T> temp = (*this)[i];
-				(*this)[i] = (temp + (*this)[i + step]) / sqrt(2);
-				(*this)[i + step] = (temp - (*this)[i + step]) / sqrt(2);
+				complex<T> temp = data[i];
+				data[i] = (temp + data[i + nbit]) / sqrt(2);
+				data[i + nbit] = (temp - data[i + nbit]) / sqrt(2);
 			}
 		}
 	}
 
-	void X(size_t n) // NOT
+	void X(size_t n) // (NOT)
 	{
-		size_t step = 1 << n;
+		int nbit = (1 << n);
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (!((i % (1 << (n + 1))) >> n))
+			if (!(i & nbit))
 			{
-				swap((*this)[i], (*this)[i + step]);
+				swap(data[i], data[i + nbit]);
 			}
 		}
 	}
 
-	void CNOT(size_t h, size_t l)//h - control
+	void CNOT(size_t h, size_t l) // (XOR) h - control
 	{
-		size_t lstep = 1 << l;
+		int nbith = (1 << h);
+		int nbitl = (1 << l);
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (((i % (1 << (h + 1))) >> h) && !((i % (1 << (l + 1))) >> l))
+			if ((i & nbith) && !(i & nbitl))
 			{
-				swap((*this)[i], (*this)[i + lstep]);
+				swap(data[i], data[i + nbitl]);
 			}
 		}
 	}
 
 	void CCNOT(size_t h1, size_t h2, size_t l)//h1, h2 - control
 	{
-		size_t lstep = 1 << l;
+		int nbith1 = (1 << h1);
+		int nbith2 = (1 << h2);
+		int nbitl = (1 << l);
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (((i % (1 << (h1 + 1))) >> h1) && ((i % (1 << (h2 + 1))) >> h2) && !((i % (1 << (l + 1))) >> l))
+			if ((i & nbith1) && (i & nbith2) && !(i & nbitl))
 			{
-				swap((*this)[i], (*this)[i + lstep]);
+				swap(data[i], data[i + nbitl]);
+			}
+		}
+	}
+
+	//maybe release CnNOT?
+
+	void Y(size_t n)
+	{
+		int nbit = (1 << n);
+
+#pragma omp parallel for
+		for (int i = 0; i < data.size(); i++)
+		{
+			if (!(i & nbit))
+			{
+				data[i] *= im;
+				data[i + nbit] *= (im*(-1.0));
+				swap(data[i], data[i + nbit]);
+			}
+		}
+	}
+
+	void Z(size_t n)
+	{
+		int nbit = (1 << n);
+
+#pragma omp parallel for
+		for (int i = 0; i < data.size(); i++)
+		{
+			if (!(i & nbit))
+			{
+				data[i + nbit] *= (-1);
 			}
 		}
 	}
 
 	void P(size_t n, double fi = (PI/2), double error = 0)
 	{
-		size_t step = 1 << n;
+		int nbit = (1 << n);
 		fi *= (1 + (error / 100));
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if(!((i % (1 << (n+1))) >> n))
+			if (!(i & nbit))
 			{
-				(*this)[i + step] = (*this)[i + step] * (cos(fi)+im*sin(fi));
+				data[i + nbit] *= (cos(fi)+im*sin(fi));
 			}
 		}
 	}
 
 	void CP(size_t h, size_t l, double fi = (PI / 2.0), double error = 0)
 	{
-		size_t lstep = 1 << l;
+		int nbith = (1 << h);
+		int nbitl = (1 << l);
 		fi *= (1 + (error / 100));
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (((i % (1 << (h + 1))) >> h) && !((i % (1 << (l + 1))) >> l))
+			if ((i & nbith) && !(i & nbitl))
 			{
-				(*this)[i + lstep] = (*this)[i + lstep] * (cos(fi) + im * sin(fi));
+				data[i + nbitl] *= (cos(fi) + im * sin(fi));
 			}
 		}
 	}
 
 	void CCP(size_t h1, size_t h2, size_t l, double fi = (PI / 2.0), double error = 0)
 	{
-		size_t lstep = 1 << l;
+		int nbith1 = (1 << h1);
+		int nbith2 = (1 << h2);
+		int nbitl = (1 << l);
 		fi *= (1 + (error / 100));
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if (((i % (1 << (h1 + 1))) >> h1) && ((i % (1 << (h2 + 1))) >> h2) && !((i % (1 << (l + 1))) >> l))
+			if ((i & nbith1) && (i & nbith2) && !(i & nbitl))
 			{
-				(*this)[i + lstep] = (*this)[i + lstep] * (cos(fi) + im * sin(fi));
+				data[i + nbitl] *= (cos(fi) + im * sin(fi));
 			}
 		}
 	}
 
 	//logic op (l - res, at the beginning l = 0 if strict calculations)
-	// X(n) = NOT(n) in n
-	//CCNOT - AND where l = h1 AND h2
+	//X(n) = NOT(n) in n
+	//CNOT(h, n) - XOR where n = XOR(n, h)  
+	//CCNOT - l XOR (h1 AND h2) -> AND h1, h2 if l = 0
 	void NOT(size_t h, size_t l)//NOT(h) in l
 	{
 		X(l);
@@ -225,10 +293,10 @@ public:
 	{
 		for (size_t i = end - 1; i >= start && i + 1 != 0; i--)
 		{
-			this->H(i);
+			H(i);
 			for (size_t j = i - 1; j >= start && j + 1 != 0; j--)
 			{
-				this->CP(j, i, PI / (1 << (i - j)), error);
+				CP(j, i, PI / (1 << (i - j)), error);
 			}
 		}
 	}
@@ -239,9 +307,9 @@ public:
 		{
 			for (size_t j = start; j < i; j++)
 			{
-				this->CP(j, i, -PI / (1 << (i - j)), error);
+				CP(j, i, -PI / (1 << (i - j)), error);
 			}
-			this->H(i);
+			H(i);
 		}
 	}
 
@@ -254,7 +322,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->P(i, PI / (1 << (i - j)), error);
+					P(i, PI / (1 << (i - j)), error);
 				}
 			}
 		}
@@ -268,7 +336,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->CP(u, i, PI / (1 << (i - j)), error);
+					CP(u, i, PI / (1 << (i - j)), error);
 				}
 			}
 		}
@@ -282,7 +350,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->CCP(u1, u2, i, PI / (1 << (i - j)), error);
+					CCP(u1, u2, i, PI / (1 << (i - j)), error);
 				}
 			}
 		}
@@ -296,7 +364,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->P(i, -PI / (1 << (i - j)), error);
+					P(i, -PI / (1 << (i - j)), error);
 				}
 			}
 		}
@@ -310,7 +378,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->CP(u, i, -PI / (1 << (i - j)), error);
+					CP(u, i, -PI / (1 << (i - j)), error);
 				}
 			}
 		}
@@ -324,7 +392,7 @@ public:
 			{
 				if ((a >> (j - start)) & 1)
 				{
-					this->CCP(u1, u2, i, -PI / (1 << (i - j)), error);
+					CCP(u1, u2, i, -PI / (1 << (i - j)), error);
 				}
 			}
 		}

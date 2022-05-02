@@ -77,7 +77,7 @@ void MillerRabin(unsigned long long int N, vector<unsigned long long int>& vec)
 array<unsigned long long int, 3> RSAkey(size_t bit = 16) //m < 2^(2*bit - 2) && bit < 32
 {
     mt19937 gen(bit);
-    uniform_int_distribution<unsigned long long int> uid((1 << (bit - 1)), (1 << (bit)));
+    uniform_int_distribution<unsigned long long int> uid((1i64 << (bit - 1)), (1i64 << (bit)));
     unsigned long long int p = uid(gen);
     unsigned long long int q = uid(gen);
 
