@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <complex>
+#include <omp.h>
 #include "MyMath.h"
 
 using namespace std;
@@ -242,6 +243,20 @@ public:
 		}
 	}
 
+	void SWAP(size_t s1, size_t s2)
+	{
+		CNOT(s1, s2);
+		CNOT(s2, s1);
+		CNOT(s1, s2);
+	}
+
+	void CSWAP(size_t s1, size_t s2, size_t u)
+	{
+		CNOT(s1, s2);
+		CCNOT(u, s2, s1);
+		CNOT(s1, s2);
+	}
+
 	//logic op (l - res, at the beginning l = 0 if strict calculations)
 	//X(n) = NOT(n) in n
 	//CNOT(h, n) - XOR where n = XOR(n, h)  
@@ -268,23 +283,19 @@ public:
 		X(l);
 	}
 
-	void SWAP(size_t start, size_t end)//(end-start)%2 == 0
+	void SWAPn(size_t start1, size_t end1, size_t start2, size_t end2)//(end1-start1) == (end2-start2) and not overlap
 	{
-		for (size_t i = start; i < start + ((end - start) / 2); i++)
+		for (size_t i = start1, j = start2; i < end1; i++, j++)
 		{
-			CNOT(i + ((end - start) / 2), i);
-			CNOT(i, i + ((end - start) / 2));
-			CNOT(i + ((end - start) / 2), i);
+			SWAP(i, j);
 		}
 	}
 
-	void CSWAP(size_t start, size_t end, size_t u)//(end-start)%2 == 0
+	void CSWAPn(size_t start1, size_t end1, size_t start2, size_t end2, size_t u)//(end1-start1) == (end2-start2) and not overlap
 	{
-		for (size_t i = start; i < start + ((end - start) / 2); i++)
+		for (size_t i = start1, j = start2; i < end1; i++, j++)
 		{
-			CNOT(i + ((end - start) / 2), i);
-			CCNOT(u, i, i + ((end - start) / 2));
-			CNOT(i + ((end - start) / 2), i);
+			CSWAP(i, j, u);
 		}
 	}
 
@@ -553,7 +564,7 @@ public:
 	{
 		ModMUL(a, N, start, end, error);
 		RQFT(start + ((end - start) / 2), end-1, error);
-		SWAP(start, end-1);
+		SWAPn(start, start + (end-start - 1)/2, start + (end - start - 1) / 2,  end-1);
 		QFT(start + ((end - start) / 2), end-1, error);
 		RModMUL(inverse_element_by_mod(a, N), N, start, end, error);
 	}
@@ -562,7 +573,7 @@ public:
 	{
 		CModMUL(a, N, start, end, u, error);
 		RQFT(start + ((end - start) / 2), end-1, error);
-		CSWAP(start, end-1, u);
+		CSWAPn(start, start + (end - start - 1) / 2, start + (end - start - 1) / 2, end - 1, u);
 		QFT(start + ((end - start) / 2), end-1, error);
 		CRModMUL(inverse_element_by_mod(a, N), N, start, end, u, error);
 	}
@@ -571,7 +582,6 @@ public:
 	{
 		size_t n = (end - start - 3) / 4;
 		(*this)[1 << (n*2)] = 1;
-		size_t a_ = a;
 
 		for (size_t i = 0; i < n*2; i++)
 		{
@@ -581,6 +591,7 @@ public:
 		QFT(n*3 + 1, end - 1, error);
 		for (size_t i = 0; i < n*2; i++)
 		{
+			cout << i << '\n';
 			CunitMUL(a, N, n*2, end, (n*2 - i - 1), error);
 			a = ModMul(a, a, N);
 		}
@@ -589,7 +600,7 @@ public:
 		RQFT(start, n*2, error);
 	}
 
-	void condition_exp(size_t start, size_t end, unsigned long int count = 10)
+	vector<size_t> condition_exp(size_t start, size_t end, unsigned long int count = 10)
 	{
 		vector<size_t> temp(1i64 << (end - start));
 		for(size_t i = 0; i < count; i++)
@@ -597,13 +608,20 @@ public:
 			T r = T(rand()) / RAND_MAX;
 			T sum = 0;
 			size_t j = 0;
-			while (sum < r)
+			while (sum < r && j < data.size())
 			{
-				sum += norm((*this)[j]);
+				sum += norm(data[j]);
 				j++;
 			}
 			temp[((j-1) % (1i64 << end))>>start]++;
 		}
+
+		return temp;
+	}
+
+	vector<size_t> condition_exp_cout(size_t start, size_t end, unsigned long int count = 10)
+	{
+		vector<size_t> temp = condition_exp(start, end, count);
 
 		for (size_t i = 0; i < temp.size(); i++)
 		{
@@ -612,26 +630,16 @@ public:
 				cout << '(' << i << "; " << temp[i] << ")\n";
 			}
 		}
+
+		return temp;
 	}
 
-	void condition_exp_in_file(size_t start, size_t end, unsigned long int count, ofstream& out)
+	vector<size_t> condition_exp_in_file(size_t start, size_t end, unsigned long int count, ofstream& out)
 	{
+		vector<size_t> temp = condition_exp(start, end, count);
+
 		if (out.is_open())
 		{
-			vector<size_t> temp(1i64 << (end - start));
-			for (size_t i = 0; i < count; i++)
-			{
-				T r = T(rand()) / RAND_MAX;
-				T sum = 0;
-				size_t j = 0;
-				while (sum < r)
-				{
-					sum += norm((*this)[j]);
-					j++;
-				}
-				temp[((j - 1) % (1i64 << end)) >> start]++;
-			}
-
 			out << size << ' ' << start << ' ' << end << ' ' << count << '\n';
 
 			for (size_t i = 0; i < temp.size(); i++)
@@ -644,6 +652,8 @@ public:
 		{
 			cout << "The files are not open!\n";
 		}
+
+		return temp;
 	}
 
 	friend istream& operator>>(istream& in, Qbit& v)

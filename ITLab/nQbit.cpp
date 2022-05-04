@@ -1,8 +1,8 @@
 ﻿#include <iostream>
+#include <fstream>
 #include <vector>
 #include <complex>
 #include <chrono>
-#include <omp.h>
 #include "Qbit.h"
 #include "RM_RSA.h"
 
@@ -15,10 +15,10 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
 
     //Shor test
-    size_t n = 5;
+    size_t n = 4;
 
     size_t a = 2;
-    size_t N = 31;
+    size_t N = 11;
 
     double error = 0;//in %, if in bar chart then int
 
@@ -34,28 +34,7 @@ int main(int argc, char* argv[])
 
     //qb.cleaning_up_small_errors();
 
-    vector<size_t> temp(1i64 << n * 2);
-
-    for (size_t i = 0; i < (1i64 << (n * 2 + 3)); i++)
-    {
-        double r = double(rand()) / RAND_MAX;
-        double sum = 0;
-        size_t k = 0;
-        while (sum < r)
-        {
-            sum += norm(qb[k]);
-            k++;
-        }
-        temp[(k-1) % (1i64 << n * 2)]++;
-    }
-
-    for (size_t i = 0; i < temp.size(); i++)
-    {
-        if (temp[i] != 0)
-        {
-            cout << '(' << i << "; " << temp[i] << ")\n";
-        }
-    }
+    vector<size_t> temp = qb.condition_exp_cout(0, 2*n, (1i64 << (n * 2 + 3)));
 
     for (size_t i = 1; i < temp.size(); i++)
     {
@@ -97,24 +76,11 @@ int main(int argc, char* argv[])
     size_t c = ModExp(m, e, pq);
 
     Qbit<double> SHOR_RSA(19);
-    SHOR_RSA.Shor(e, pq, 0, 19, 2);
+    SHOR_RSA.Shor(e, pq, 0, 19, 1);
 
     size_t res1 = 1;
 
-    vector<size_t> temp1(1i64 << 8);
-
-    for (size_t i = 0; i < (1i64 << 11); i++)
-    {
-        double r = double(rand()) / RAND_MAX;
-        double sum = 0;
-        size_t k = 0;
-        while (sum < r)
-        {
-            sum += norm(SHOR_RSA[k]);
-            k++;
-        }
-        temp1[(k - 1) % (1i64 << 8)]++;
-    }
+    vector<size_t> temp1 = SHOR_RSA.condition_exp(0, 8, 1i64 << 11);
 
     for (size_t i = 1; i < temp1.size(); i++)
     {
@@ -149,7 +115,7 @@ int main(int argc, char* argv[])
     Dense.CNOT(2, 3);
     Dense.H(2);
 
-    Dense.condition_exp(0, 4, 100);//Alice = Bob -> res = st + (st << 2)
+    Dense.condition_exp_cout(0, 4, 100);//Alice = Bob -> res = st + (st << 2)
 
     //system("pause");
 }
