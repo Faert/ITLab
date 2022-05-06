@@ -10,7 +10,7 @@
 using namespace std;
 
 const double PI = 3.141592653589793;// 238463;
-complex<double> im(0, 1);
+const complex<double> im(0, 1);
 
 template<typename T>
 class Qbit
@@ -112,8 +112,8 @@ public:
 			if(!(i & nbit))
 			{
 				complex<T> temp = data[i];
-				data[i] = (temp + data[i + nbit]) / sqrt(2);
-				data[i + nbit] = (temp - data[i + nbit]) / sqrt(2);
+				data[i] = (temp + data[i + nbit]) / T(sqrt(2));
+				data[i + nbit] = (temp - data[i + nbit]) / T(sqrt(2));
 			}
 		}
 	}
@@ -578,7 +578,8 @@ public:
 		CRModMUL(inverse_element_by_mod(a, N), N, start, end, u, error);
 	}
 
-	void Shor(size_t a, size_t N, size_t start, size_t end, double error = 0)//4n+3 zero qbit without QFT -> 0-127 and gcd(a, N) == 1
+	void Shor(size_t a, size_t N, size_t start, size_t end, double error = 0)
+	//4n+3 zero qbit without QFT, gcd(a, N) == 1, a < N < 2^n
 	{
 		size_t n = (end - start - 3) / 4;
 		(*this)[1 << (n*2)] = 1;
@@ -591,7 +592,6 @@ public:
 		QFT(n*3 + 1, end - 1, error);
 		for (size_t i = 0; i < n*2; i++)
 		{
-			cout << i << '\n';
 			CunitMUL(a, N, n*2, end, (n*2 - i - 1), error);
 			a = ModMul(a, a, N);
 		}

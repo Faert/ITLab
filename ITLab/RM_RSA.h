@@ -6,8 +6,6 @@
 #include <array>
 #include "MyMath.h"
 
-//draft without optimization
-
 using namespace std;
 
 void MillerRabin(unsigned long long int N, vector<unsigned long long int>& vec)

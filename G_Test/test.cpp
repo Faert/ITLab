@@ -243,3 +243,35 @@ TEST(Qbit, SHOR)
 		}
 	}
 }
+
+TEST(RMR_SA, MillerRabin)
+{
+	vector<unsigned long long int> RM;
+	vector<unsigned long long int> res;
+	res.push_back(2);
+	res.push_back(2);
+	res.push_back(3);
+	res.push_back(7);
+	res.push_back(5);
+	res.push_back(7);
+	MillerRabin(2940, RM);
+	for (size_t i = 0; i < RM.size(); i++)
+	{
+		EXPECT_EQ(RM[i], res[i]);
+	}
+	RM.erase(RM.begin(), RM.end());
+	res.erase(res.begin(), res.end());
+	res.push_back(163);
+	res.push_back(878167);
+	MillerRabin(143141221, RM);
+	for (size_t i = 0; i < RM.size(); i++)
+	{
+		EXPECT_EQ(RM[i], res[i]);
+	}
+}
+
+TEST(RMR_SA, RSA)
+{
+	unsigned int m = 4;
+	EXPECT_EQ(RSA_decryption(RSA_encryption(m)), m);
+}

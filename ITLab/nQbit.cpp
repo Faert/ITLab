@@ -10,41 +10,27 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-    //argc and argv when final release
-
     auto start = std::chrono::steady_clock::now();
 
     //Shor test
     size_t n = 4;
 
     size_t a = 2;
-    size_t N = 11;
+    size_t N = 15;
 
     double error = 0;//in %, if in bar chart then int
 
     cout << "P, CP, CPP error = " << error << "%\n";
 
-    Qbit<double> qb(4*n + 3);
+    Qbit<float> qb(4*n + 3);
 
     qb.Shor(a, N, 0, 4 * n + 3, error);
 
-    //Instead of qb.condition_exp(0, 2*n, (1i64 << (n * 2 + 3))) because we count the res
+    qb.condition_exp_cout(0, 2 * n, (1i64 << (n * 2 + 3)));
     
     size_t res = 1;
 
     //qb.cleaning_up_small_errors();
-
-    vector<size_t> temp = qb.condition_exp_cout(0, 2*n, (1i64 << (n * 2 + 3)));
-
-    for (size_t i = 1; i < temp.size(); i++)
-    {
-        if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1] * 2)) && (temp[i] > (temp[i - 1] * 2)))
-        {
-            res++;
-        }
-    }
-
-    cout << res << '\n';
 
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
@@ -55,7 +41,19 @@ int main(int argc, char* argv[])
 
     if (out.is_open())
     {
-        qb.condition_exp_in_file(0, 2 * n, (1i64 << (n * 2 + 3)), out);
+        //qb.condition_exp_in_file(0, 2 * n, (1i64 << (n * 2 + 3)), out);
+        vector<size_t> temp = qb.condition_exp_in_file(0, 2 * n, (1i64 << (n * 2 + 3)), out);
+
+        for (size_t i = 1; i < temp.size(); i++)
+        {
+            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1] * 2)) && (temp[i] > (temp[i - 1] * 2)))
+            {
+                res++;
+            }
+        }
+
+        cout << res << '\n';
+
         out << a << ' ' << N << ' ' << error << ' ' << res << '\n';
     }
 
@@ -100,7 +98,7 @@ int main(int argc, char* argv[])
     cout << m << ' ' <<  ModExp(c, d, pq) << '\n';
 
     //Sample dense coding
-    Qbit<double> Dense(4); //0, 1 Alice, 2, 3 Bob
+    Qbit<double> Dense(4); //0, 1 Alice; 2, 3 Bob in 0
     size_t st = 1;//st < 2^2
     Dense[st] = 1;
     
