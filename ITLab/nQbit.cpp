@@ -74,17 +74,38 @@ int main(int argc, char* argv[])
     size_t c = ModExp(m, e, pq);
 
     Qbit<double> SHOR_RSA(19);
-    SHOR_RSA.Shor(e, pq, 0, 19, 1);
 
     size_t res1 = 1;
 
-    vector<size_t> temp1 = SHOR_RSA.condition_exp(0, 8, 1i64 << 11);
-
-    for (size_t i = 1; i < temp1.size(); i++)
+    while (true)
     {
-        if ((temp1[i] > (temp1[0] / 2)) && (temp1[i] > (temp1[i + 1] * 2)) && (temp1[i] > (temp1[i - 1] * 2)))
+        SHOR_RSA.clear();
+        SHOR_RSA.Shor(e, pq, 0, 19, 1);
+
+        vector<size_t> temp1 = SHOR_RSA.condition_exp(0, 8, 1i64 << 11);
+
+        for (size_t i = 1; i < temp1.size(); i++)
         {
-            res1++;
+            if ((temp1[i] > (temp1[0] / 2)) && (temp1[i] > (temp1[i + 1] * 2)) && (temp1[i] > (temp1[i - 1] * 2)))
+            {
+                res1++;
+            }
+        }
+
+        if (res1 & 1)
+        {
+            while (gcd(e, pq) != 1)
+            {
+                e++;
+                if (e >= pq)
+                {
+                    e = 2;
+                }
+            }
+        }
+        else
+        {
+            break;
         }
     }
 

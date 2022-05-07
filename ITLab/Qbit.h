@@ -52,6 +52,12 @@ public:
 		return data.at(i);
 	}
 
+	void clear()
+	{
+		data.clear();
+		data.resize(1 << size);
+	}
+
 	void normalization()
 	{
 		complex<T> len = 0;
