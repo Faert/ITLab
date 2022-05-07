@@ -205,35 +205,35 @@ TEST(Qbit, MUL_RMUL_MULX_BY_MODULE)
 	test1.RQFT(0, 4);
 	EXPECT_TRUE(1.0 - norm(test1[3]) < 0.00000001);
 
-	Qbit<double> test2(7);
-	test2[3] = 1;
-	test2.QFT(3, 6);
-	test2.ModMUL(2, 4, 0, 7);
-	test2.RQFT(3, 6);
-	EXPECT_TRUE(1.0 - norm(test2[3 + (2<<3)]) < 0.00000001);
+	Qbit<double> test2(6);
+	test2[2] = 1;
+	test2.QFT(2, 5);
+	test2.ModMUL(2, 3, 0, 6);
+	test2.RQFT(2, 5);
+	EXPECT_TRUE(1.0 - norm(test2[2 + (1<<2)]) < 0.00000001);
 
-	Qbit<double> test3(7);
+	Qbit<double> test3(6);
 	test3[3] = 1;
-	test3.QFT(3, 6);
-	test3.RModMUL(3, 4, 0, 7);
-	test3.RQFT(3, 6);
-	EXPECT_TRUE(1.0 - norm(test3[3 + (3 << 3)]) < 0.00000001);
+	test3.QFT(2, 5);
+	test3.RModMUL(3, 4, 0, 6);
+	test3.RQFT(2, 5);
+	EXPECT_TRUE(1.0 - norm(test3[3 + (3 << 2)]) < 0.00000001);
 }
 
 TEST(Qbit, unitMUL)
 {
-	Qbit<double> test2(7);
+	Qbit<double> test2(6);
 	test2[3] = 1;
-	test2.QFT(3, 6);
-	test2.unitMUL(3, 4, 0, 7);
-	test2.RQFT(3, 6);
+	test2.QFT(2, 5);
+	test2.unitMUL(3, 4, 0, 6);
+	test2.RQFT(2, 5);
 	EXPECT_TRUE(1.0 - norm(test2[1]) < 0.00000001);
 }
 
 TEST(Qbit, SHOR)
 {
-	Qbit<double> test2(19);
-	test2.Shor(2, 15, 0, 19, 0);
+	Qbit<double> test2(18);
+	test2.Shor(2, 15, 0, 18, 0);
 	vector<size_t> temp = test2.condition_exp(0, 8, (1i64 << 11));
 	for (size_t i = 0; i < 256; i++)
 	{

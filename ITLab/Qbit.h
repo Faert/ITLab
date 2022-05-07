@@ -525,69 +525,69 @@ public:
 		}
 	}
 
-	//for all ModMUL and RModMUL and unitMUL QFT(start + ((end-start)/2), end-1)
+	//for all ModMUL and RModMUL and unitMUL QFT(start + ((end-start)/2) - 1, end-1)
 
 	void ModMUL(size_t a, size_t N, size_t start, size_t end, double error = 0)
-	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+3, end - start % 2 == 1
+	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+2
 	{
-		for (size_t j = start; j < start + ((end - start) / 2); j++)
+		for (size_t j = start; j < start + ((end - start) / 2 ) - 1; j++)
 		{
-			CModADD(a, N, start + ((end - start) / 2), end, j, error);
+			CModADD(a, N, start + ((end - start) / 2) - 1, end, j, error);
 			a = (a << 1) % N;
 		}
 	}
 
 	void CModMUL(size_t a, size_t N, size_t start, size_t end, size_t u, double error = 0)
 	{
-		for (size_t j = start; j < start + ((end - start) / 2); j++)
+		for (size_t j = start; j < start + ((end - start) / 2) - 1; j++)
 		{
-			CCModADD(a, N, start + ((end - start) / 2), end, j, u, error);
+			CCModADD(a, N, start + ((end - start) / 2) - 1, end, j, u, error);
 			a = (a << 1) % N;
 		}
 	}
 
 	void RModMUL(size_t a, size_t N, size_t start, size_t end, double error = 0)
-	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+3, end - start % 2 == 1
+	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+2
 	{
-		for (size_t j = start; j < start + ((end - start) / 2); j++)
+		for (size_t j = start; j < start + ((end - start) / 2) - 1; j++)
 		{
-			CModSUB(a, N, start + ((end - start) / 2), end, j, error);
+			CModSUB(a, N, start + ((end - start) / 2) - 1, end, j, error);
 			a = (a << 1) % N;
 		}
 	}
 
 	void CRModMUL(size_t a, size_t N, size_t start, size_t end, size_t u, double error = 0)
 	{
-		for (size_t j = start; j < start + ((end - start) / 2); j++)
+		for (size_t j = start; j < start + ((end - start) / 2) - 1; j++)
 		{
-			CCModSUB(a, N, start + ((end - start) / 2), end, j, u, error);
+			CCModSUB(a, N, start + ((end - start) / 2) - 1, end, j, u, error);
 			a = (a << 1) % N;
 		}
 	}
 
 	void unitMUL(size_t a, size_t N, size_t start, size_t end, double error = 0)//(gcd(a, N) == 1, else output -> a*x mod N, x)
-	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+3, end - start % 2 == 1
+	//a, b < N < 2^(end-start - 1), end-start >= 2*max(bitsize(a, b))+2
 	{
 		ModMUL(a, N, start, end, error);
-		RQFT(start + ((end - start) / 2), end-1, error);
-		SWAPn(start, start + (end-start - 1)/2, start + (end - start - 1) / 2,  end-1);
-		QFT(start + ((end - start) / 2), end-1, error);
+		RQFT(start + ((end - start) / 2) - 1, end-1, error);
+		SWAPn(start, start + (end-start - 2) / 2, start + (end - start - 2) / 2,  end-1);
+		QFT(start + ((end - start) / 2) - 1, end-1, error);
 		RModMUL(inverse_element_by_mod(a, N), N, start, end, error);
 	}
 
 	void CunitMUL(size_t a, size_t N, size_t start, size_t end, size_t u, double error = 0)
 	{
 		CModMUL(a, N, start, end, u, error);
-		RQFT(start + ((end - start) / 2), end-1, error);
-		CSWAPn(start, start + (end - start - 1) / 2, start + (end - start - 1) / 2, end - 1, u);
-		QFT(start + ((end - start) / 2), end-1, error);
+		RQFT(start + ((end - start) / 2) - 1, end-1, error);
+		CSWAPn(start, start + (end - start - 2) / 2, start + (end - start - 2) / 2, end - 1, u);
+		QFT(start + ((end - start) / 2) - 1, end-1, error);
 		CRModMUL(inverse_element_by_mod(a, N), N, start, end, u, error);
 	}
 
 	void Shor(size_t a, size_t N, size_t start, size_t end, double error = 0)
-	//4n+3 zero qbit without QFT, gcd(a, N) == 1, a < N < 2^n
+	//4n+2 zero qbit without QFT, gcd(a, N) == 1, a < N < 2^n
 	{
-		size_t n = (end - start - 3) / 4;
+		size_t n = (end - start - 2) / 4;
 		(*this)[1 << (n*2)] = 1;
 
 		for (size_t i = 0; i < n*2; i++)
@@ -595,13 +595,13 @@ public:
 			H(i);
 		}
 
-		QFT(n*3 + 1, end - 1, error);
+		QFT(n*3, end - 1, error);
 		for (size_t i = 0; i < n*2; i++)
 		{
 			CunitMUL(a, N, n*2, end, (n*2 - i - 1), error);
 			a = ModMul(a, a, N);
 		}
-		RQFT(n * 3 + 1, end - 1, error);
+		RQFT(n * 3, end - 1, error);
 		
 		RQFT(start, n*2, error);
 	}

@@ -16,7 +16,7 @@ info_Shor = all_result[2].split()
 info_Shor = [int(i) for i in info_Shor]
 
 #plt.plot(result)
-a = [i for i in range(1 << (info_condition_exp[0]-3) // 2)]
+a = [i for i in range(1 << (info_condition_exp[0]-2) // 2)]
 plt.bar(a, result)
 title = 'Shor(' + str(info_Shor[0]) + ', ' + str(info_Shor[1]) + ') with error = ' + str(info_Shor[2]) + '%'
 plt.title(title)
