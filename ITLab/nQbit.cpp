@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 
     cout << "P, CP, CPP error = " << error << "%\n";
 
-    Qbit<float> qb(4*n + 3);
+    Qbit<double> qb(4*n + 3);
 
     qb.Shor(a, N, 0, 4 * n + 3, error);
 
