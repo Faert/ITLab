@@ -13,12 +13,12 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
 
     //Shor test
-    size_t n = 3;
+    size_t n = 5;
 
-    size_t a = 2;
-    size_t N = 7;
+    size_t a = 30;
+    size_t N = 31;
 
-    double error = 0;//in %, if in bar chart then int
+    double error = 5;//in %, if in bar chart then int
 
     cout << "P, CP, CPP error = " << error << "%\n";
 
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 
     qb.Shor(a, N, 0, 4 * n + 2, error);
 
-    qb.condition_exp_cout(0, 2 * n, (1i64 << (n * 2 + 3)));
+    qb.condition_exp_cout(0, 2 * n, (1i64 << (n * 2 + 3)));//
     
     size_t res = 1;
 
@@ -67,10 +67,10 @@ int main(int argc, char* argv[])
     //RSA hacking
     
     //RSA open key{e, pq}
-    size_t pq = 26;
-    size_t e = 5;
+    size_t pq = 10;
+    size_t e = 3;
 
-    size_t n1 = 5;
+    size_t n1 = 4;
 
     //RSA encryption
     size_t m = 3;//message
@@ -95,8 +95,10 @@ int main(int argc, char* argv[])
             }
         }
 
-        size_t tempp = (gcd(MyPow(e, res1 / 2) + 1, pq) == pq);
-        size_t tempm = (gcd(MyPow(e, res1 / 2) - 1, pq) == pq);
+        size_t e_ = e;
+
+        size_t tempp = (gcd(MyPow(e, res1 / 2) + 1, pq));
+        size_t tempm = (gcd(MyPow(e, res1 / 2) - 1, pq));
         if ((res1 & 1) || ((tempp == pq || tempp == 1) && (tempm == pq || tempm == 1)))
         {
             e++;
@@ -107,6 +109,13 @@ int main(int argc, char* argv[])
                 {
                     e = 2;
                 }
+                
+            }
+
+            if (e = e_)
+            {
+                cout << "Wrong pq\n";
+                break;
             }
 
             res1 = 1;
