@@ -66,10 +66,10 @@ int main(int argc, char* argv[])
     //RSA hacking
     
     //RSA open key{e, pq}
-    size_t pq = 22;
-    size_t e = 3;
+    size_t pq = 14;
+    size_t e = 5;//gcd(e, fn) = 1, fn = (p-1)(q-1) 
 
-    size_t n1 = 5;
+    size_t n1 = 4;
 
     //RSA encryption
     size_t m = 3;//message
