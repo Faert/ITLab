@@ -12,13 +12,13 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    //Shor test
-    size_t n = 5;
+    //Shor
+    size_t n = 4;
 
-    size_t a = 30;
-    size_t N = 31;
+    size_t a = 2;//gcd(a, N) == 1
+    size_t N = 15;//N < 2^n
 
-    double error = 5;//in %, if in bar chart then int
+    double error = 0;//in %, if in bar chart then int
 
     cout << "P, CP, CPP error = " << error << "%\n";
 
@@ -58,7 +58,6 @@ int main(int argc, char* argv[])
 
     out.close();
 
-
     //sample RSA
     cout << RSA_decryption(RSA_encryption(15, 10)) << '\n' << '\n';
 
@@ -67,10 +66,10 @@ int main(int argc, char* argv[])
     //RSA hacking
     
     //RSA open key{e, pq}
-    size_t pq = 10;
+    size_t pq = 22;
     size_t e = 3;
 
-    size_t n1 = 4;
+    size_t n1 = 5;
 
     //RSA encryption
     size_t m = 3;//message
@@ -79,11 +78,12 @@ int main(int argc, char* argv[])
     Qbit<double> SHOR_RSA(4*n1 + 2);
 
     size_t res1 = 1;
+    size_t e_ = e;
 
     while (true)
     {
         SHOR_RSA.clear();
-        SHOR_RSA.Shor(e, pq, 0, 4 * n1 + 2, 1);
+        SHOR_RSA.Shor(e, pq, 0, 4 * n1 + 2, 0);
 
         vector<size_t> temp1 = SHOR_RSA.condition_exp(0, 2 * n1, 1i64 << 2 * n1 + 3);
 
@@ -95,11 +95,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        size_t e_ = e;
-
         size_t tempp = (gcd(MyPow(e, res1 / 2) + 1, pq));
         size_t tempm = (gcd(MyPow(e, res1 / 2) - 1, pq));
-        if ((res1 & 1) || ((tempp == pq || tempp == 1) && (tempm == pq || tempm == 1)))
+        if ((res1 & 1) || ((tempp == pq && tempp == 1) && (tempm == pq && tempm == 1)))
         {
             e++;
             while (gcd(e, pq) != 1)
@@ -112,7 +110,7 @@ int main(int argc, char* argv[])
                 
             }
 
-            if (e = e_)
+            if (e == e_)
             {
                 cout << "Wrong pq\n";
                 break;
@@ -128,14 +126,14 @@ int main(int argc, char* argv[])
 
     //if res1%2 = 0, else start shor(a, pq) with random a: gcd(a, pq) = 1 
     size_t p = gcd(MyPow(e, res1 / 2) + 1, pq);
-    if (p == pq)
+    if (p == pq || p == 1)
     {
         p = gcd(MyPow(e, res1 / 2) - 1, pq);
     }
     size_t q = pq / p;
     size_t fn = (p - 1) * (q - 1);
 
-    size_t d = inverse_element_by_mod(e, fn);
+    size_t d = inverse_element_by_mod(e_, fn);
 
     cout << m << ' ' <<  ModExp(c, d, pq) << '\n';
 
