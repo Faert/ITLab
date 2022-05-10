@@ -34,7 +34,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
     std::chrono::duration<double> elapsed_seconds = end - start;
     if (print)
     {
-        std::cout << "Shor " << a << ' ' << N << "time: " << elapsed_seconds.count() << "s\n\n";
+        std::cout << "Shor " << a << ' ' << N << " time: " << elapsed_seconds.count() << "s\n\n";
     }
 
     ofstream out;
@@ -46,7 +46,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
 
         for (size_t i = 1; i < temp.size(); i++)
         {
-            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1] * 2)) && (temp[i] > (temp[i - 1] * 2)))
+            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1])) && (temp[i] > (temp[i - 1])))
             {
                 res++;
             }
@@ -65,7 +65,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
 
         for (size_t i = 1; i < temp.size(); i++)
         {
-            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1] * 2)) && (temp[i] > (temp[i - 1] * 2)))
+            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1])) && (temp[i] > (temp[i - 1])))
             {
                 res++;
             }
@@ -82,11 +82,9 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
     return res;
 }
 
-size_t RSA_hacking(size_t e, size_t pq, size_t n1, size_t m)
+size_t RSA_hacking(size_t e, size_t pq, size_t n1, size_t c)
 {
     auto start = std::chrono::steady_clock::now();
-
-    size_t c = ModExp(m, e, pq);
 
     size_t res1 = 1;
     size_t e_ = e;
@@ -136,7 +134,7 @@ size_t RSA_hacking(size_t e, size_t pq, size_t n1, size_t m)
 
     size_t m_ = ModExp(c, d, pq);
 
-    cout << m << ' ' << m_ << '\n';
+    cout << m_ << '\n';
 
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
@@ -170,7 +168,7 @@ int main(int argc, char* argv[])
     //Shor
     size_t n = 4;
 
-    size_t a = 2;//gcd(a, N) == 1
+    size_t a = 2;//gcd(a, N) == 1, a < N
     size_t N = 15;//N < 2^n
 
     double error = 0;//in %, if in bar chart then int
@@ -193,7 +191,9 @@ int main(int argc, char* argv[])
 
     //RSA encryption
     size_t m = 3;//message
-    RSA_hacking(e, pq, n1, m);
+    size_t c = ModExp(m, e, pq);
+
+    RSA_hacking(e, pq, n1, c);
 
 
     //Sample dense coding
