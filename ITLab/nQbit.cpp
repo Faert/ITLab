@@ -8,36 +8,37 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
+size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, string out_file = "Shor_result.txt")
 {
+    if (print)
+    {
+        cout << "P, CP, CPP error = " << error << "%\n";
+    }
+
     auto start = std::chrono::steady_clock::now();
 
-    //Shor
-    size_t n = 4;
-
-    size_t a = 2;//gcd(a, N) == 1
-    size_t N = 15;//N < 2^n
-
-    double error = 0;//in %, if in bar chart then int
-
-    cout << "P, CP, CPP error = " << error << "%\n";
-
-    Qbit<double> qb(4*n + 2);
+    Qbit<double> qb(4 * n + 2);
 
     qb.Shor(a, N, 0, 4 * n + 2, error);
 
-    qb.condition_exp_cout(0, 2 * n, (1i64 << (n * 2 + 3)));//
-    
+    if (print)
+    {
+        qb.condition_exp_cout(0, 2 * n, (1i64 << (n * 2 + 3)));
+    }
+
     size_t res = 1;
 
     //qb.cleaning_up_small_errors();
 
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n\n";
+    if (print)
+    {
+        std::cout << "Shor " << a << ' ' << N << "time: " << elapsed_seconds.count() << "s\n\n";
+    }
 
     ofstream out;
-    out.open("Shor_result.txt");
+    out.open(out_file);
 
     if (out.is_open())
     {
@@ -51,49 +52,48 @@ int main(int argc, char* argv[])
             }
         }
 
-        cout << res << '\n' << '\n';
+        if (print)
+        {
+            cout << res << '\n' << '\n';
+        }
 
         out << a << ' ' << N << ' ' << error << ' ' << res << ' ' << round(elapsed_seconds.count()) << '\n';
+    }
+    else
+    {
+        vector<size_t> temp = qb.condition_exp(0, 2 * n, (1i64 << (n * 2 + 3)));
+
+        for (size_t i = 1; i < temp.size(); i++)
+        {
+            if ((temp[i] > (temp[0] / 2)) && (temp[i] > (temp[i + 1] * 2)) && (temp[i] > (temp[i - 1] * 2)))
+            {
+                res++;
+            }
+        }
+
+        if (print)
+        {
+            cout << res << '\n' << '\n';
+        }
     }
 
     out.close();
 
-    //sample RSA
-    cout << RSA_decryption(RSA_encryption(15, 10)) << '\n' << '\n';
+    return res;
+}
 
+size_t RSA_hacking(size_t e, size_t pq, size_t n1, size_t m)
+{
+    auto start = std::chrono::steady_clock::now();
 
-    auto start1 = std::chrono::steady_clock::now();
-    //RSA hacking
-    
-    //RSA open key{e, pq}
-    size_t pq = 14;
-    size_t e = 5;//gcd(e, fn) = 1, fn = (p-1)(q-1) 
-
-    size_t n1 = 4;
-
-    //RSA encryption
-    size_t m = 3;//message
     size_t c = ModExp(m, e, pq);
-
-    Qbit<double> SHOR_RSA(4*n1 + 2);
 
     size_t res1 = 1;
     size_t e_ = e;
 
     while (true)
     {
-        SHOR_RSA.clear();
-        SHOR_RSA.Shor(e, pq, 0, 4 * n1 + 2, 0);
-
-        vector<size_t> temp1 = SHOR_RSA.condition_exp(0, 2 * n1, 1i64 << 2 * n1 + 3);
-
-        for (size_t i = 1; i < temp1.size(); i++)
-        {
-            if ((temp1[i] > (temp1[0] / 2)) && (temp1[i] > (temp1[i + 1] * 2)) && (temp1[i] > (temp1[i - 1] * 2)))
-            {
-                res1++;
-            }
-        }
+        res1 = Shor(e, pq, n1, 0, false, "RSA_Shor_result.txt");
 
         size_t tempp = (gcd(MyPow(e, res1 / 2) + 1, pq));
         size_t tempm = (gcd(MyPow(e, res1 / 2) - 1, pq));
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
                 {
                     e = 2;
                 }
-                
+
             }
 
             if (e == e_)
@@ -124,7 +124,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    //if res1%2 = 0, else start shor(a, pq) with random a: gcd(a, pq) = 1 
     size_t p = gcd(MyPow(e, res1 / 2) + 1, pq);
     if (p == pq || p == 1)
     {
@@ -135,17 +134,23 @@ int main(int argc, char* argv[])
 
     size_t d = inverse_element_by_mod(e_, fn);
 
-    cout << m << ' ' <<  ModExp(c, d, pq) << '\n';
+    size_t m_ = ModExp(c, d, pq);
 
-    auto end1 = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds1 = end1 - start1;
-    std::cout << "elapsed time: " << elapsed_seconds1.count() << "s\n\n";
+    cout << m << ' ' << m_ << '\n';
 
-    //Sample dense coding
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::cout << "RSA hacking time: " << elapsed_seconds.count() << "s\n\n";
+
+    return (m_);
+}
+
+void Dense_coding(size_t st = 1)//st < 2^2
+{
     Qbit<double> Dense(4); //0, 1 Alice; 2, 3 Bob in 0
-    size_t st = 1;//st < 2^2
+
     Dense[st] = 1;
-    
+
     Dense.H(2);
     Dense.CNOT(2, 3);
 
@@ -158,6 +163,41 @@ int main(int argc, char* argv[])
     Dense.H(2);
 
     Dense.condition_exp_cout(0, 4, 100);//Alice = Bob -> res = st + (st << 2)
+}
+
+int main(int argc, char* argv[])
+{
+    //Shor
+    size_t n = 4;
+
+    size_t a = 2;//gcd(a, N) == 1
+    size_t N = 15;//N < 2^n
+
+    double error = 0;//in %, if in bar chart then int
+
+    Shor(a, N, n, error, true);
+
+    //sample RSA
+    size_t mes = 15;//message
+    size_t bit = 10;
+
+    cout << RSA_decryption(RSA_encryption(mes, bit)) << '\n' << '\n';
+
+    //RSA hacking
+    
+    //RSA open key{e, pq}
+    size_t pq = 14;
+    size_t e = 5;//gcd(e, fn) = 1, fn = (p-1)(q-1) 
+
+    size_t n1 = 4;
+
+    //RSA encryption
+    size_t m = 3;//message
+    RSA_hacking(e, pq, n1, m);
+
+
+    //Sample dense coding
+    Dense_coding(1);
 
     //system("pause");
 }
