@@ -34,7 +34,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
     std::chrono::duration<double> elapsed_seconds = end - start;
     if (print)
     {
-        std::cout << "Shor " << a << ' ' << N << " time: " << elapsed_seconds.count() << "s\n\n";
+        std::cout << "Shor " << a << ' ' << N << " time: " << elapsed_seconds.count() << "s\n";
     }
 
     ofstream out;
@@ -54,7 +54,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
 
         if (print)
         {
-            cout << res << '\n' << '\n';
+            cout << res << "\n\n";
         }
 
         out << a << ' ' << N << ' ' << error << ' ' << res << ' ' << round(elapsed_seconds.count()) << '\n';
@@ -73,7 +73,7 @@ size_t Shor(size_t a, size_t N, size_t n, double error = 0, bool print = false, 
 
         if (print)
         {
-            cout << res << '\n' << '\n';
+            cout << res << "\n\n";
         }
     }
 
@@ -143,16 +143,13 @@ size_t RSA_hacking(size_t e, size_t pq, size_t n1, size_t c)
     return (m_);
 }
 
-void Dense_coding(size_t st = 1)//st < 2^2
+void Dense_coding(Qbit<double> Dense, size_t count_exp = 100)//Dense 2,3 qbits = 0
 {
-    Qbit<double> Dense(4); //0, 1 Alice; 2, 3 Bob in 0
-
-    Dense[st] = 1;
-
     Dense.H(2);
     Dense.CNOT(2, 3);
 
     Dense.CNOT(1, 2);
+    //Z
     Dense.H(2);
     Dense.CNOT(0, 2);
     Dense.H(2);
@@ -160,21 +157,43 @@ void Dense_coding(size_t st = 1)//st < 2^2
     Dense.CNOT(2, 3);
     Dense.H(2);
 
-    Dense.condition_exp_cout(0, 4, 100);//Alice = Bob -> res = st + (st << 2)
+    Dense.condition_exp_cout(2, 4, count_exp);//Alice = Bob -> res = st
+}
+
+void Bells_inequality(Qbit<double> Bell, double a = 0, double b = 0, size_t count_exp = 100)//Bell(2 qubit) in 11
+{
+    Bell.H(1);
+    Bell.CNOT(1, 0);
+
+    Bell.RZ(0, a);
+    Bell.RZ(1, b);
+
+    Bell.H(0);
+    Bell.H(1);
+
+    for(int i =0; i < 4; i++)
+    cout << Bell[i] << '\n';
+
+    cout << '\n';
+
+    Bell.condition_exp_cout(0, 2, count_exp);
 }
 
 int main(int argc, char* argv[])
 {
     //Shor
+    
     size_t n = 4;
 
-    size_t a = 2;//gcd(a, N) == 1, a < N
+    size_t a = 11;//gcd(a, N) == 1, a < N
     size_t N = 15;//N < 2^n
 
     double error = 0;//in %, if in bar chart then int
 
     Shor(a, N, n, error, true);
+    
 
+    /*
     //sample RSA
     size_t mes = 15;//message
     size_t bit = 10;
@@ -200,4 +219,98 @@ int main(int argc, char* argv[])
     Dense_coding(1);
 
     //system("pause");
+    */
+
+    /*
+    //Dense coding
+    Qbit<double> Dense(4); //0, 1 Alice; 2, 3 Bob in 0
+
+    Dense[1] = im;
+    Dense[2] = 3;
+    Dense.normalization();
+
+    cout << "Dense coding:\n";
+    Dense_coding(Dense, 1000);
+    cout << "\n\n";
+
+    //Quantum Fourier transform
+    cout << "Quantum Fourier transform\n";
+
+    Qbit<double> QFT(3);
+
+    QFT[3] = 1;
+
+    QFT.condition_exp_cout(0, 3, 1000);
+
+    cout << '\n';
+
+    QFT.QFT(0, 3);
+
+    for (size_t i = 0; i < 8; i++)
+        cout << i << ' ' << QFT[i] << '\n';
+    cout << '\n';
+
+    cout << "Second QFT error 38.5 \n";
+    QFT.QFT(0, 3, 38.5);
+
+    for (size_t i = 0; i < 8; i++)
+        cout << i << ' ' << QFT[i] << '\n';
+    cout << '\n';
+
+
+    QFT.condition_exp_cout(0, 3, 1000);
+    cout << '\n';
+
+    //size_t a = 2;
+    //size_t start = 0;
+    //size_t end = 3;
+    //double error = 0;
+
+    //сумматор с обратным к a
+    /*
+    for (size_t j = end-1; (j >= start) && (j < end); j--)
+    {
+        if ((a >> (j - start)) & 1)
+        {
+            for (size_t i = j; (i >= start) && (i <= j); i--)
+            {
+                QFT.P(i, PI / (1 << (j - i)), error);
+            }
+        }
+    }
+    */
+
+    /*
+    //сумматор
+    for (size_t j = end - 1; (j >= start) && (j < end); j--)
+    {
+        if ((a >> ((end - 1) - j)) & 1)
+        {
+            for (size_t i = j; (i >= start) && (i <= j); i--)
+            {
+                QFT.P(i, PI / (1 << (j - i)), error);
+            }
+        }
+    }
+    */
+
+    //QFT.RQFT(0, 3);
+    
+    //QFT.condition_exp_cout(0, 3, 1000);
+
+
+
+    //Bells inequality
+    
+    /*
+    cout << "\nBells inequality\n";
+
+    Qbit<double> Bell(2);
+    Bell[3] = 1;
+
+    double a = PI / 3;
+    double b = 0;
+
+    Bells_inequality(Bell, a, b, 8192);
+    */
 }

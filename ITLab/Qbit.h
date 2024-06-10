@@ -25,7 +25,7 @@ private:
 	}
 
 public:
-	Qbit(size_t s = 4): data(vector<complex<T>>(1i64 << s)), size(s) {} //max s = 28 for double
+	Qbit(size_t s = 2): data(vector<complex<T>>(1i64 << s)), size(s) {} //max s = 28 for double
 	Qbit(const vector<complex<T>>& other): data(vector<complex<T>>(other)) 
 	{
 		size_t DataSize = data.size();
@@ -35,6 +35,7 @@ public:
 			size++;
 		}
 		size--;
+		//data[0] = 1;
 	}
 
 	const size_t qsize() const
@@ -56,6 +57,7 @@ public:
 	{
 		data.clear();
 		data.resize(1 << size);
+		//data[0] = 1;
 	}
 
 	void normalization()
@@ -108,145 +110,108 @@ public:
 		data = temp;
 	}
 
-	void H(size_t n)
+	void gate(vector<size_t> control_q, complex<T> matrix[4])
 	{
-		int nbit = (1 << n);
+		int mask = 0;
+		int step = 1 << control_q.back();
+		for (size_t i = 0; i < control_q.size(); i++)
+		{
+			if (control_q[i] >= size)
+			{
+				data.resize(data.size() * 2, 0);
+			}
+			mask += (1 << control_q[i]);
+		}
 
 #pragma omp parallel for
 		for (int i = 0; i < data.size(); i++)
 		{
-			if(!(i & nbit))
+			if ((i & mask) == mask)
 			{
-				complex<T> temp = data[i];
-				data[i] = (temp + data[i + nbit]) / T(sqrt(2));
-				data[i + nbit] = (temp - data[i + nbit]) / T(sqrt(2));
+				complex<T> temp = data[i - step];
+				data[i - step] = temp*matrix[0] + data[i]*matrix[1];
+				data[i] = temp * matrix[2] + data[i] * matrix[3];
 			}
 		}
+	}
+
+	void H(size_t n)
+	{
+		
+		vector<size_t> control_q { n };
+		complex<T> matrix[4] { 1 / T(sqrt(2)), 1 / T(sqrt(2)), 1 / T(sqrt(2)), -1 / T(sqrt(2)) };
+		gate(control_q, matrix);
 	}
 
 	void X(size_t n) // (NOT)
 	{
-		int nbit = (1 << n);
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if (!(i & nbit))
-			{
-				swap(data[i], data[i + nbit]);
-			}
-		}
+		vector<size_t> control_q{ n };
+		complex<T> matrix[4]{ 0, 1, 1, 0 };
+		gate(control_q, matrix);
 	}
 
 	void CNOT(size_t h, size_t l) // (XOR) h - control
 	{
-		int nbith = (1 << h);
-		int nbitl = (1 << l);
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if ((i & nbith) && !(i & nbitl))
-			{
-				swap(data[i], data[i + nbitl]);
-			}
-		}
+		vector<size_t> control_q{ h, l };
+		complex<T> matrix[4]{ 0, 1, 1, 0 };
+		gate(control_q, matrix);
 	}
 
 	void CCNOT(size_t h1, size_t h2, size_t l)//h1, h2 - control
 	{
-		int nbith1 = (1 << h1);
-		int nbith2 = (1 << h2);
-		int nbitl = (1 << l);
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if ((i & nbith1) && (i & nbith2) && !(i & nbitl))
-			{
-				swap(data[i], data[i + nbitl]);
-			}
-		}
+		vector<size_t> control_q{ h1, h2, l };
+		complex<T> matrix[4]{ 0, 1, 1, 0 };
+		gate(control_q, matrix);
 	}
 
 	//maybe release CnNOT?
 
 	void Y(size_t n)
 	{
-		int nbit = (1 << n);
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if (!(i & nbit))
-			{
-				data[i] *= im;
-				data[i + nbit] *= (im*(-1.0));
-				swap(data[i], data[i + nbit]);
-			}
-		}
+		vector<size_t> control_q{ n };
+		complex<T> matrix[4]{ 0, -im, im, 0 };
+		gate(control_q, matrix);
 	}
 
 	void Z(size_t n)
 	{
-		int nbit = (1 << n);
+		vector<size_t> control_q{ n };
+		complex<T> matrix[4]{ 1, 0, 0, -1 };
+		gate(control_q, matrix);
+	}
 
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
+	void RZ(size_t n, double fi = (PI / 2), double error = 0)
+	{
 		{
-			if (!(i & nbit))
-			{
-				data[i + nbit] *= (-1);
-			}
+			fi *= (1 + (error / 100))/2;
+			vector<size_t> control_q{n };
+			complex<T> matrix[4]{ exp(-im*fi), 0, 0, exp(im * fi) };
+			gate(control_q, matrix);
 		}
 	}
 
 	void P(size_t n, double fi = (PI/2), double error = 0)
 	{
-		int nbit = (1 << n);
 		fi *= (1 + (error / 100));
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if (!(i & nbit))
-			{
-				data[i + nbit] *= (cos(fi)+im*sin(fi));
-			}
-		}
+		vector<size_t> control_q{ n };
+		complex<T> matrix[4]{ 1, 0, 0, exp(im * fi) };
+		gate(control_q, matrix);
 	}
 
 	void CP(size_t h, size_t l, double fi = (PI / 2.0), double error = 0)
 	{
-		int nbith = (1 << h);
-		int nbitl = (1 << l);
 		fi *= (1 + (error / 100));
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if ((i & nbith) && !(i & nbitl))
-			{
-				data[i + nbitl] *= (cos(fi) + im * sin(fi));
-			}
-		}
+		vector<size_t> control_q{ h, l };
+		complex<T> matrix[4]{ 1, 0, 0, exp(im * fi) };
+		gate(control_q, matrix);
 	}
 
 	void CCP(size_t h1, size_t h2, size_t l, double fi = (PI / 2.0), double error = 0)
 	{
-		int nbith1 = (1 << h1);
-		int nbith2 = (1 << h2);
-		int nbitl = (1 << l);
 		fi *= (1 + (error / 100));
-
-#pragma omp parallel for
-		for (int i = 0; i < data.size(); i++)
-		{
-			if ((i & nbith1) && (i & nbith2) && !(i & nbitl))
-			{
-				data[i + nbitl] *= (cos(fi) + im * sin(fi));
-			}
-		}
+		vector<size_t> control_q{ h1, h2, l };
+		complex<T> matrix[4]{ 1, 0, 0, exp(im * fi) };
+		gate(control_q, matrix);
 	}
 
 	void SWAP(size_t s1, size_t s2)
@@ -306,6 +271,9 @@ public:
 	}
 
 	//end = last+1
+
+	//QFT without SWAP for Shor
+	//can be changed   
 	void QFT(size_t start, size_t end, double error = 0)
 	{
 		for (size_t i = end - 1; i >= start && i + 1 != 0; i--)
@@ -316,10 +284,24 @@ public:
 				CP(j, i, PI / (1 << (i - j)), error);
 			}
 		}
+		
+		/*
+		for (size_t k = start; k < ((end + start) / 2); k++)
+		{
+			SWAP(k, end + start - k - 1);
+		}
+		*/
 	}
 
 	void RQFT(size_t start, size_t end, double error = 0)
 	{
+		/*
+		for (size_t k = start; k < ((end + start) / 2); k++)
+		{
+			SWAP(k, end + start - k - 1);
+		}
+		*/
+
 		for (size_t i = start; i < end; i++)
 		{
 			for (size_t j = start; j < i; j++)
@@ -335,9 +317,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					P(i, PI / (1 << (i - j)), error);
 				}
@@ -349,9 +331,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					CP(u, i, PI / (1 << (i - j)), error);
 				}
@@ -363,9 +345,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					CCP(u1, u2, i, PI / (1 << (i - j)), error);
 				}
@@ -377,9 +359,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					P(i, -PI / (1 << (i - j)), error);
 				}
@@ -391,9 +373,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					CP(u, i, -PI / (1 << (i - j)), error);
 				}
@@ -405,9 +387,9 @@ public:
 	{
 		for (size_t j = start; j < end; j++)
 		{
-			for (size_t i = j; i < end; i++)
+			if ((a >> (j - start)) & 1)
 			{
-				if ((a >> (j - start)) & 1)
+				for (size_t i = j; i < end; i++)
 				{
 					CCP(u1, u2, i, -PI / (1 << (i - j)), error);
 				}
